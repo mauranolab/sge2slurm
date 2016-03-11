@@ -1,0 +1,169 @@
+#!/bin/env python
+
+from __future__ import print_function
+
+import sys
+import os
+import re
+import subprocess
+import argparse
+
+
+def quote_argument(argument):
+       return '%s' % (
+              argument
+              .replace('\\', '\\\\')
+#              .replace('"', '\\"')
+              .replace('$', '\\$')
+              .replace('`', '\\`')
+)
+
+
+parser = argparse.ArgumentParser(prog = "qsub", description = "", allow_abbrev=False)
+parser.add_argument("cmd", type = str, default=None, nargs="?", help = "")
+parser.add_argument("-hold_jid", action = "store", type = str, help = " [%(default)s]")
+parser.add_argument("-pe", action = "store", type = str, nargs=2, help= " [%(default)s]")
+parser.add_argument("-j", action = "store", type = str, choices=['y', 'n'], help = "[%(default)s]")
+parser.add_argument("-b", action = "store", type = str, choices=['y', 'n'], help = "ignored [%(default)s]")
+parser.add_argument("-o", action = "store", type = str, help = "[%(default)s]")
+#parser.add_argument("-e", action = "store", type = str, help = "[%(default)s]")
+parser.add_argument("-t", action = "store", type = str, help = "[%(default)s]")
+parser.add_argument("-tc", action = "store", type = int, help = "[%(default)s]")
+parser.add_argument("-p", action = "store", type = int, help = "[%(default)s]")
+parser.add_argument("-S", action = "store", type = str, help = "[%(default)s]")
+parser.add_argument("-N", action = "store", type = str, help = "[%(default)s]")
+parser.add_argument("-V", action = "store_true", default = False, help = " [%(default)s]")
+parser.add_argument("-cwd", action = "store_true", default = False, help = "passthru for now [%(default)s]")
+parser.add_argument("-terse", action = "store_true", default = False, help = "")
+parser.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
+args = parser.parse_args()
+
+
+if args.verbose:
+       print("[qsub -> SLURM] " + ' '.join([str(cur) for cur in sys.argv]), file=sys.stderr)
+print("[qsub -> SLURM]", args, file=sys.stderr)
+sys.stderr.flush()
+
+
+###Generate sbatch command
+theCmd = "sbatch"
+
+
+if args.V:
+       theCmd += " --export=ALL"
+
+
+if args.terse:
+       theCmd += " --parsable"
+
+
+name = None
+if args.N is not None:
+       name = args.N
+else:
+       if args.cmd is None:
+              name = "STDIN"
+       else:
+              name = args.cmd
+theCmd += " -J \"" + name + "\""
+
+
+#stdout
+if args.o is not None:
+       stdoutFilename = args.o
+       if os.path.isdir(args.o) and re.search("\/$", args.o) is None:
+              stdoutFilename += "/" + name
+else:
+       stdoutFilename = name
+theCmd += " -o \"" + stdoutFilename + ".o%A"
+if args.t is not None:
+       theCmd += ".%a"
+theCmd += "\""
+
+#stderr
+if args.j != "y":
+       theCmd += " -e \"" + stdoutFilename + ".e%A"
+       if args.t is not None:
+              theCmd += ".%a"
+       theCmd += "\""
+
+
+if args.t is not None:
+       theCmd += " --array=" + args.t
+
+
+if args.tc is not None:
+       theCmd += " --ntasks=" + str(args.tc)
+
+
+#BUGBUG seems to have no effect on priority
+if args.p is not None:
+       theCmd += " --nice=" + str(-1 * args.p)
+
+
+if args.hold_jid is not None:
+       #BUGBUG SLURM only takes ids
+       #NB use afterok even though SGE only blocks dependencies upon a 100 return code
+       theCmd += " --depend=afterok:" + args.hold_jid
+
+
+if args.pe is not None:
+       if args.pe[0] != "threads":
+              raise Exception("Can't handle pe " + args.pe[0])
+       
+       #BUGBUG can't handle ranges
+       theCmd += " --cpus-per-task=" + args.pe[1]
+
+
+theCmd += " <<EOF\n#!/bin/bash\n"
+theCmd += quote_argument("""\n#For SGE compatibility
+export TMPDIR=/tmp/slurm.tmp.${SLURM_JOB_NAME}.${SLURM_JOB_ID}
+if [[ ! -z ${SLURM_ARRAY_TASK_ID} ]]; then
+export TMPDIR=${TMPDIR}.${SLURM_ARRAY_TASK_ID}
+fi
+mkdir -p $TMPDIR
+
+export JOB_ID=${SLURM_JOB_ID}
+
+if [[ -z ${SLURM_NTASKS} ]]; then
+export NSLOTS=1
+else
+export NSLOTS=${SLURM_CPUS_PER_TASK}
+fi
+
+if [[ -z ${SLURM_ARRAY_TASK_ID} ]]; then
+export SGE_TASK_ID="undefined"
+else
+export SGE_TASK_ID=${SLURM_ARRAY_TASK_ID}
+fi\n\n""")
+
+#Breaks when run in batch cluster job
+#use_stdin = not sys.stdin.isatty()
+use_stdin = args.cmd is None
+if use_stdin:
+       if args.cmd is not None:
+              raise Exception("Appear to have command on both command line and stdin (" + sys.stdin.name + ")")
+       try:
+              with sys.stdin as source:
+                     for line in source:
+                            theCmd += quote_argument(line) + "\n"
+       except:
+              pass
+       finally:
+              sys.stdin.close()
+else:
+       if args.cmd is None:
+              raise Exception
+       if re.search(" ", args.cmd) is None and os.path.isfile(args.cmd):
+              theCmd += "/bin/bash " + args.cmd + "\n"
+       elif args.S == "/bin/bash":
+              theCmd += quote_argument(args.cmd) + "\n"
+       else:
+              theCmd += args.S + " " + quote_argument(args.cmd) + "\n"
+
+theCmd += "EOF\n"
+
+if args.verbose:
+       print("[qsub -> SLURM] " + theCmd, file=sys.stderr)
+
+subprocess.call(theCmd, shell=True)
