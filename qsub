@@ -1,5 +1,7 @@
 #!/bin/env python
 
+#qsub for SGE->SLURM -- Matt Maurano
+
 import sys
 import os
 import re
