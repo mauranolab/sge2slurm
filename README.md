@@ -1,6 +1,13 @@
 # sge2slurm
 Compatibility wrappers for adapting SGE workflows to SLURM
 
+See example slurm.conf, and pay special attention to these parameters for matching typical SGE behaviour:
+SchedulerType=sched/builtin
+PriorityType=priority/multifactor
+SelectType=select/cons_res
+SelectTypeParameters=CR_CPU
+
+
 #Useful aliases for SGE -> SLURM:
 <pre>alias qdel='scancel'</pre>
 
