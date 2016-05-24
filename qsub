@@ -47,7 +47,13 @@ slurm_group.add_argument("--share", action = "store_true", default = False, help
 qsub_group = parser.add_argument_group(title="qsub SGE->SLURM options")
 qsub_group.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
 
-args = parser.parse_args()
+#argparse does not set an exit code upon this error
+#https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
+try:
+       args = parser.parse_args()
+except argparse.ArgumentError as exc:
+       print(exc.message, '\n', exc.argument)
+       sys.exit(2)
 
 
 if args.verbose:
