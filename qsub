@@ -3,6 +3,11 @@
 #qsub for SGE->SLURM -- Matt Maurano
 
 import sys
+if sys.version_info[0] < 3:
+    print("Package requires Python 3")
+    sys.exit(1)
+
+
 import os
 import re
 import subprocess
@@ -25,19 +30,22 @@ sge_group = parser.add_argument_group(title="SGE options")
 sge_group.add_argument("cmd", type = str, default=None, nargs="?", help = "")
 sge_group.add_argument("-hold_jid", action = "store", type = str, help = " [%(default)s]")
 sge_group.add_argument("-pe", action = "store", type = str, nargs=2, help= " [%(default)s]")
-sge_group.add_argument("-j", action = "store", type = str, choices=['y', 'n'], help = "[%(default)s]")
-sge_group.add_argument("-b", action = "store", type = str, choices=['y', 'n'], help = "ignored [%(default)s]")
+sge_group.add_argument("-j", action = "store", type = str, choices=['y', 'yes', 'n', 'no'], help = "[%(default)s]")
+sge_group.add_argument("-b", action = "store", type = str, choices=['y', 'yes', 'n', 'no'], help = "ignored [%(default)s]")
+sge_group.add_argument("-r", action = "store", type = str, choices=['y', 'yes', 'n', 'no'], help = "[%(default)s]")
+sge_group.add_argument("-w", action = "store", type = str, choices=['e', 'w', 'n', 'v'], help = "ignored [%(default)s]")
 sge_group.add_argument("-o", action = "store", type = str, help = "[%(default)s]")
 #sge_group.add_argument("-e", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-t", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-tc", action = "store", type = int, help = "[%(default)s]")
 sge_group.add_argument("-p", action = "store", type = int, help = "[%(default)s]")
-sge_group.add_argument("-q", action = "store", type = str, help = "[%(default)s] queue")
+sge_group.add_argument("-q", action = "store", type = str, help = "[%(default)s] queue name")
 sge_group.add_argument("-S", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-N", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-V", action = "store_true", default = False, help = " [%(default)s]")
 sge_group.add_argument("-cwd", action = "store_true", default = False, help = "no effect for now [%(default)s]")
-sge_group.add_argument("-terse", action = "store_true", default = False, help = "")
+sge_group.add_argument("-now", action = "store_true", default = False, help = "[%(default)s]")
+sge_group.add_argument("-terse", action = "store_true", default = False, help = "[%(default)s]")
 
 slurm_group = parser.add_argument_group(title="SLURM passthrough options")
 slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
@@ -75,6 +83,10 @@ if args.terse:
        theCmd += " --parsable"
 
 
+if args.now:
+       theCmd += " --immediate"
+
+
 name = None
 if args.N is not None:
        name = args.N
@@ -104,13 +116,19 @@ if args.t is not None:
        theCmd += ".%a"
 theCmd += "\""
 
+
 #stderr
-if args.j != "y":
+if args.j != "y" and args.j != "yes":
        theCmd += " -e \"" + stdoutFilename + ".e%A"
        if args.t is not None:
               theCmd += ".%a"
        theCmd += "\""
 
+
+if args.r == "y" or args.r == "yes":
+       theCmd += " --requeue"
+elif args.r == "n" or args.r == "no":
+       theCmd += " --no-requeue"
 
 if args.t is not None:
        theCmd += " --array=" + args.t
