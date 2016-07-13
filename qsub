@@ -145,7 +145,8 @@ if args.q is not None:
 
 
 def sjobname2id(jobname):
-       return str(int(subprocess.check_output("squeue -o '%F %j' | awk '$2==\""  + jobname + "\" {print $1}' | sort | uniq", shell=True)))
+       jobids = subprocess.check_output("squeue -o '%F %j' | awk '$2==\""  + jobname + "\" {print $1}' | sort | uniq", shell=True).decode().rstrip()
+       return(",".join([str(int(x)) for x in jobids.split('\n')]))
 
 if args.hold_jid is not None:
        #SLURM only takes ids, so look up any names
