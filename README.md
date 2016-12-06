@@ -16,6 +16,6 @@ Based on qcheck by Shane Neph
 </pre>
 
 <pre>
-qstata () { squeue -o '%9F|%.3p|%45j|%.8u|%2t|%19S;%19V|%5P|%.3C|%.10K|%R' -S 'P,-t,B,-p' | awk -F "|" 'BEGIN {OFS=" "} {if(NR==1) {$6="SUBMIT/START       "} else {split($6, times, ";"); if($5=="R") {$6=times[1]} else {$6=times[2]}} print}'; }
-qstat () { qstata -u `whoami`; }
+qstata () { squeue -o '%9F|%.3p|%45j|%.8u|%2t|%19S;%19V|%5P|%.3C|%.10K|%R' -S 'P,-t,B,-p' $* | awk -F "|" 'BEGIN {OFS=" "} {if(NR==1) {$6="SUBMIT/START       "} else {split($6, times, ";"); if($5=="R") {$6=times[1]} else {$6=times[2]}} print}'; }
+qstat () { qstata -u `whoami` $* ; }
 </pre>
