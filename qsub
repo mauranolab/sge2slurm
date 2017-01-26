@@ -51,7 +51,7 @@ slurm_group = parser.add_argument_group(title="SLURM passthrough options")
 slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
-
+slurm_group.add_argument("--qos", action = "store", type = str, help = "[%(default)s]")
 qsub_group = parser.add_argument_group(title="qsub SGE->SLURM options")
 qsub_group.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
 
@@ -186,8 +186,12 @@ if args.mem is not None:
        theCmd += " --mem=" + args.mem
 
 
-if args.share is not None:
+if args.share is not False:
        theCmd += " --share"
+
+
+if args.qos is not None:
+       theCmd += " --qos=" + args.qos
 
 
 ###Do job script
@@ -244,4 +248,4 @@ theCmd += "EOF\n"
 if args.verbose:
        print("[qsub -> SLURM] " + theCmd, file=sys.stderr)
 
-subprocess.call(theCmd, shell=True)
+subprocess.check_call(theCmd, shell=True)
