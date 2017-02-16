@@ -39,7 +39,7 @@ In slurm.conf:
 enable AccountingStorageEnforce=associations,limits,qos
 </pre>
 
-Users with access can submit to full by default:
+Users with access can do `sbatch --qos full` and also set a default:
 <pre>
 export SBATCH_QOS=full
 </pre>
