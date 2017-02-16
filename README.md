@@ -19,3 +19,27 @@ Based on qcheck by Shane Neph
 qstata () { squeue -o '%9F|%.3p|%45j|%.8u|%2t|%19S;%19V|%5P|%.3C|%.10K|%R' -S 'P,-t,B,-p' $* | awk -F "|" 'BEGIN {OFS=" "} {if(NR==1) {$6="SUBMIT/START       "} else {split($6, times, ";"); if($5=="R") {$6=times[1]} else {$6=times[2]}} print}'; }
 qstat () { qstata -u `whoami` $* ; }
 </pre>
+
+#Limit on number of total slots used per-user
+The best way is to create 2 QOS:
+<ol>
+<li> normal is limited to 144 slots per user
+<li> full enables full use of the queue. Access can optionally be restricted to certain users
+</ol>
+
+You must use sacctmgr:
+<pre>
+sacctmgr modify qos normal set MaxCpusPerUser=144
+sacctmgr create qos full 
+sacctmgr modify user mauram01 set qos+=full
+</pre>
+
+In slurm.conf:
+<pre>
+enable AccountingStorageEnforce=associations,limits,qos
+</pre>
+
+Users with access can submit to full by default:
+<pre>
+export SBATCH_QOS=full
+</pre>
