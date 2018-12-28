@@ -13,6 +13,8 @@ import re
 import subprocess
 import argparse
 
+version="1.1"
+
 
 def quote_argument(argument):
     return '%s' % (
@@ -57,6 +59,7 @@ slurm_group.add_argument("--oversubscribe", action = "store_true", default = Fal
 slurm_group.add_argument("--qos", action = "store", type = str, help = "[%(default)s]")
 qsub_group = parser.add_argument_group(title="qsub SGE->SLURM options")
 qsub_group.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
+qsub_group.add_argument('--version', action='version', version='%(prog)s ' + version)
 
 #argparse does not set an exit code upon this error
 #https://stackoverflow.com/questions/5943249/python-argparse-and-controlling-overriding-the-exit-status-code
