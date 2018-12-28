@@ -40,6 +40,8 @@ sge_group.add_argument("-t", action = "store", type = str, help = "[%(default)s]
 sge_group.add_argument("-tc", action = "store", type = int, help = "[%(default)s]")
 sge_group.add_argument("-p", action = "store", type = int, help = "[%(default)s]")
 sge_group.add_argument("-q", action = "store", type = str, help = "[%(default)s] queue name")
+sge_group.add_argument("-m", action = "store", type = str, choices=['a', 'b', 'e', 'n'], help = "[%(default)s] email type, s not supported")
+sge_group.add_argument("-M", action = "store", type = str, help = "[%(default)s] email address")
 sge_group.add_argument("-S", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-N", action = "store", type = str, help = "[%(default)s]")
 sge_group.add_argument("-V", action = "store_true", default = False, help = " [%(default)s]")
@@ -131,10 +133,28 @@ if args.r == "y" or args.r == "yes":
 elif args.r == "n" or args.r == "no":
        theCmd += " --no-requeue"
 
+
 if args.t is not None:
        theCmd += " --array=" + args.t
        if args.tc is not None:
               theCmd += "%" + str(args.tc)
+
+
+if args.M is not None or args.m is not None:
+       if args.M is not None and args.m is not None:
+              theCmd += " --mail-user=" + args.M
+              if args.m == 'a':
+                     theCmd += " --mail-type=FAIL"
+              elif args.m == 'b':
+                     theCmd += " --mail-type=BEGIN"
+              elif args.m == 'e':
+                     theCmd += " --mail-type=END"
+              elif args.m == 'n':
+                     theCmd += " --mail-type=NONE"
+              else:
+                     raise Exception("Don't know how to handle -m " + args.m)
+       else:
+              raise Exception("Don't know how to handle -m/-M as specified")
 
 
 if args.p is not None:
