@@ -13,7 +13,7 @@ import re
 import subprocess
 import argparse
 
-version="1.1"
+version="1.2"
 
 
 def quote_argument(argument):
@@ -271,7 +271,12 @@ else:
         theCmd += args.S + " " + quote_argument(args.cmd) + "\n"
 
 theCmd += "\n"
+theCmd += "#Retain exit status of last command to pass on after cleaning up\n"
+theCmd += "EXITCODE=\$?\n"
+theCmd += "\n"
 theCmd += "rm -rf \$TMPDIR\n\n"
+theCmd += "exit \${EXITCODE}\n"
+theCmd += "\n"
 theCmd += "EOF\n"
 
 if args.verbose:
