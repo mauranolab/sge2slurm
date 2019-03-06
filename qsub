@@ -267,6 +267,8 @@ else:
         theCmd += "/bin/bash " + args.cmd + "\n"
     elif args.S == "/bin/bash":
         theCmd += quote_argument(args.cmd) + "\n"
+    elif args.S is None:
+        theCmd += quote_argument(args.cmd) + "\n"
     else:
         theCmd += args.S + " " + quote_argument(args.cmd) + "\n"
 
