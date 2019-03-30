@@ -34,6 +34,9 @@ You must use sacctmgr:
 sacctmgr modify qos normal set MaxCpusPerUser=144
 sacctmgr create qos full 
 sacctmgr modify user mauram01 set qos+=full
+#we also use a third low queue
+sacctmgr create qos low
+sacctmgr modify qos low set MaxCpusPerUser=48
 </pre>
 
 In slurm.conf:
