@@ -20,6 +20,7 @@ qgrep () { qstat | tail +2 | grep $* | awk '{print $1}' ; }
 qnode () { squeue -o '%9F %.3p %45j %.8u %2t %19S %9P %.3C %.5K %R' -S 'P,-t,B,-p' | awk 'NR>1 && $5=="R"' | sort -k10,10 | awk '{for(i=1; i<=$8; i++) {print $10}}' | hist | sort -k2,2 -; }
 alias rqsub='qsub -S `which Rscript`'
 alias bqsub='qsub -S /bin/bash'
+alias qlogin='srun --pty bash'
 </pre>
 
 #Limit on number of total slots used per-user
