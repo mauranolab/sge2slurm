@@ -13,7 +13,10 @@ import re
 import subprocess
 import argparse
 
-version="1.2"
+version="1.3"
+
+
+createTMPDIR = True
 
 
 def quote_argument(argument):
@@ -54,6 +57,7 @@ sge_group.add_argument("-terse", action = "store_true", default = False, help = 
 slurm_group = parser.add_argument_group(title="SLURM passthrough options")
 slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--export", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--oversubscribe", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--qos", action = "store", type = str, help = "[%(default)s]")
@@ -210,6 +214,11 @@ if args.mem is not None:
     theCmd += " --mem=" + args.mem
 
 
+#BUGBUG does this collide with -V?
+if args.export is not None:
+    theCmd += " --export=\"" + args.export + '"'
+
+
 if args.share is not False:
     theCmd += " --share"
 
@@ -225,13 +234,26 @@ if args.qos is not None:
 
 ###Do job script
 theCmd += " <<EOF\n#!/bin/bash\n"
-theCmd += quote_argument("""\n#For SGE compatibility
-export TMPDIR=/tmp/slurm.tmp.${SLURM_JOB_NAME}.${SLURM_JOB_ID}
-if [[ ! -z ${SLURM_ARRAY_TASK_ID} ]]; then
-export TMPDIR=${TMPDIR}.${SLURM_ARRAY_TASK_ID}
-fi
-mkdir -p $TMPDIR
 
+if createTMPDIR:
+    theCmd += quote_argument("""\n
+#Initialize TMPDIR
+if [[ $HOSTNAME == isglcdcstorage01 ]]; then 
+   export TMPDIR=/adams/tmp
+else
+   export TMPDIR=/tmp
+fi
+
+export TMPDIR=${TMPDIR}/slurm.tmp.${SLURM_JOB_NAME}.${SLURM_JOB_ID}
+
+if [[ ! -z ${SLURM_ARRAY_TASK_ID} ]]; then
+    export TMPDIR=${TMPDIR}.${SLURM_ARRAY_TASK_ID}
+fi
+
+mkdir -p $TMPDIR""")
+
+theCmd += quote_argument("""\n
+#For SGE compatibility
 export JOB_ID=${SLURM_JOB_ID}
 
 if [[ -z ${SLURM_CPUS_PER_TASK} ]]; then
@@ -272,14 +294,21 @@ else:
     else:
         theCmd += args.S + " " + quote_argument(args.cmd) + "\n"
 
-theCmd += "\n"
-theCmd += "#Retain exit status of last command to pass on after cleaning up\n"
-theCmd += "EXITCODE=\$?\n"
-theCmd += "\n"
-theCmd += "rm -rf \$TMPDIR\n\n"
-theCmd += "exit \${EXITCODE}\n"
-theCmd += "\n"
-theCmd += "EOF\n"
+
+if createTMPDIR:
+    theCmd += quote_argument("""
+
+#Retain exit status of last command to pass on after cleaning up
+EXITCODE=$?
+
+if [[ ! -z ${TMPDIR} ]]; then
+   rm -rf ${TMPDIR}
+fi
+
+exit ${EXITCODE}\n""")
+
+theCmd += "\nEOF\n"
+
 
 if args.verbose:
     print("[qsub -> SLURM] " + theCmd, file=sys.stderr)
