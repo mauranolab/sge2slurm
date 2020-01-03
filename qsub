@@ -192,7 +192,7 @@ if args.hold_jid is not None:
                 print("Converted job name " + job + " to id " + hold_jid_list[i], file=sys.stderr)
             
     #NB use afterok even though SGE only blocks dependencies upon a 100 return code
-    theCmd += " --depend=afterok:" + ",".join(hold_jid_list)
+    theCmd += " --depend=afterok:" + ":".join(hold_jid_list)
 
 
 if args.pe is not None:
