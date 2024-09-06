@@ -13,7 +13,7 @@ import re
 import subprocess
 import argparse
 
-version="1.3"
+version="1.4"
 
 
 createTMPDIR = True
@@ -57,6 +57,7 @@ sge_group.add_argument("-terse", action = "store_true", default = False, help = 
 slurm_group = parser.add_argument_group(title="SLURM passthrough options")
 slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--time", action = "store", type = str, help = "[%(default)]")
 slurm_group.add_argument("--export", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--oversubscribe", action = "store_true", default = False, help = "[%(default)s]")
@@ -213,6 +214,8 @@ if args.mem_per_cpu is not None:
 if args.mem is not None:
     theCmd += " --mem=" + args.mem
 
+if args.time is not None:
+    theCmd += " --time=" + args.time
 
 #BUGBUG does this collide with -V?
 if args.export is not None:
@@ -238,13 +241,13 @@ theCmd += " <<EOF\n#!/bin/bash\n"
 if createTMPDIR:
     theCmd += quote_argument("""\n
 #Initialize TMPDIR
-if [[ $HOSTNAME == isglcdcstorage01 ]]; then 
+if [[ $HOSTNAME == isglpdcstorage01 ]]; then 
    export TMPDIR=/adams/tmp
 else
    export TMPDIR=/tmp
 fi
 
-export TMPDIR=${TMPDIR}/slurm.tmp.${SLURM_JOB_NAME}.${SLURM_JOB_ID}
+export TMPDIR=${TMPDIR}/slurm.tmp.${SLURM_JOB_NAME:0:80}.${SLURM_JOB_ID}
 
 if [[ ! -z ${SLURM_ARRAY_TASK_ID} ]]; then
     export TMPDIR=${TMPDIR}.${SLURM_ARRAY_TASK_ID}
