@@ -57,11 +57,12 @@ sge_group.add_argument("-terse", action = "store_true", default = False, help = 
 slurm_group = parser.add_argument_group(title="SLURM passthrough options")
 slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
-slurm_group.add_argument("--time", action = "store", type = str, help = "[%(default)]")
+slurm_group.add_argument("--time", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--export", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--oversubscribe", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--qos", action = "store", type = str, help = "[%(default)s]")
+
 qsub_group = parser.add_argument_group(title="qsub SGE->SLURM options")
 qsub_group.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
 qsub_group.add_argument('--version', action='version', version='%(prog)s ' + version)
