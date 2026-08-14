@@ -13,7 +13,7 @@ import re
 import subprocess
 import argparse
 
-version="1.4"
+version="1.6"
 
 
 createTMPDIR = True
@@ -55,13 +55,17 @@ sge_group.add_argument("-now", action = "store_true", default = False, help = "[
 sge_group.add_argument("-terse", action = "store_true", default = False, help = "[%(default)s]")
 
 slurm_group = parser.add_argument_group(title="SLURM passthrough options")
-slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
-slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
-slurm_group.add_argument("--time", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--export", action = "store", type = str, help = "[%(default)s]")
-slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
+slurm_group.add_argument("--gres", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--mem", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--mem-per-cpu", action = "store", type = str, help = "[%(default)s]")
 slurm_group.add_argument("--oversubscribe", action = "store_true", default = False, help = "[%(default)s]")
 slurm_group.add_argument("--qos", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--share", action = "store_true", default = False, help = "[%(default)s]")
+slurm_group.add_argument("--time", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--exclude", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--nodefile", action = "store", type = str, help = "[%(default)s]")
+slurm_group.add_argument("--nodelist", action = "store", type = str, help = "[%(default)s]")
 
 qsub_group = parser.add_argument_group(title="qsub SGE->SLURM options")
 qsub_group.add_argument("--verbose", action='store_true', default=False, help = "Verbose mode")
@@ -208,23 +212,21 @@ if args.pe is not None:
 
 
 ##SLURM pass-through options
-if args.mem_per_cpu is not None:
-    theCmd += " --mem-per-cpu=" + args.mem_per_cpu
-
-
-if args.mem is not None:
-    theCmd += " --mem=" + args.mem
-
-if args.time is not None:
-    theCmd += " --time=" + args.time
-
 #BUGBUG does this collide with -V?
 if args.export is not None:
     theCmd += " --export=\"" + args.export + '"'
 
 
-if args.share is not False:
-    theCmd += " --share"
+if args.gres is not None:
+    theCmd += " --gres=" + args.gres
+
+
+if args.mem is not None:
+    theCmd += " --mem=" + args.mem
+
+
+if args.mem_per_cpu is not None:
+    theCmd += " --mem-per-cpu=" + args.mem_per_cpu
 
 
 #Newer versions of SLURM changed the name of --share
@@ -236,25 +238,42 @@ if args.qos is not None:
     theCmd += " --qos=" + args.qos
 
 
+if args.share is not False:
+    theCmd += " --share"
+
+
+if args.time is not None:
+    theCmd += " --time=" + args.time
+
+
+if args.exclude is not None:
+    theCmd += " --exclude=" + args.exclude
+
+
+if args.nodelist is not None:
+    theCmd += " --nodelist=" + args.nodelist
+
+
+if args.nodefile is not None:
+    theCmd += " --nodefile=" + args.nodefile
+
+
+
 ###Do job script
 theCmd += " <<EOF\n#!/bin/bash\n"
 
 if createTMPDIR:
     theCmd += quote_argument("""\n
 #Initialize TMPDIR
-if [[ $HOSTNAME == isglpdcstorage01 ]]; then 
-   export TMPDIR=/adams/tmp
-else
-   export TMPDIR=/tmp
-fi
+export TMPDIR=/tmp
 
-export TMPDIR=${TMPDIR}/slurm.tmp.${SLURM_JOB_NAME:0:80}.${SLURM_JOB_ID}
+export TMPDIR=${TMPDIR}/qsub.${SLURM_JOB_NAME:0:50}.${SLURM_JOB_ID}
 
 if [[ ! -z ${SLURM_ARRAY_TASK_ID} ]]; then
     export TMPDIR=${TMPDIR}.${SLURM_ARRAY_TASK_ID}
 fi
 
-mkdir -p $TMPDIR""")
+mkdir $TMPDIR""")
 
 theCmd += quote_argument("""\n
 #For SGE compatibility
