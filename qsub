@@ -122,7 +122,7 @@ if args.o is not None:
     stdoutFilename = args.o
     #SGE allows passing a directory whereupon we use the job name as the filename
     if os.path.isdir(args.o):
-        if re.search("\/$", args.o) is None:
+        if re.search(r"\/$", args.o) is None:
             stdoutFilename += "/" 
         stdoutFilename += name
 else:
